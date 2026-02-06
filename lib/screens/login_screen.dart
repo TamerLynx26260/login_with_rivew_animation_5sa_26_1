@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:rive/rive.dart' show RiveAnimation;
+
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,7 +19,7 @@ class _login_screenState extends State<LoginScreen> {
         child: Column(
           children: [
             Expanded ( 
-              child: RiveAnimation.asset('animateds/login_screen.riv'),
+              child: RiveAnimation.asset('assets/animated_login_bear.riv'),
 
             )
           ],
