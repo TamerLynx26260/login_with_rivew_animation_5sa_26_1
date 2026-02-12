@@ -9,9 +9,18 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  //control para mostrar u ocultar la contraseña
+  bool _obscureText = true;
+  
+  //Crear el cerebrro de la animacion 
+  StateMachineController? _controller;
+  //SMI: State Machine Input
+  SMIBool? _isChecking;
+  SMIBool? _isHandsUp;
+  SMITrigger? _trigSuccess;
+  SMITrigger? _trigFail;
 
-//Control para mostrar u ocultar la contraseña
- bool _obscureText = true;
+
   @override
   Widget build(BuildContext context) {
     //para obtener el tamaño de la pantalla y usarlo para ajustar el diseño
@@ -25,11 +34,38 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               SizedBox(
                 width: size.width,
-                height: 200,
-                child: RiveAnimation.asset('assets/animated_login_bear.riv')),
+                height:250,
+              child: RiveAnimation.asset('assets/animated_login_bear.riv', 
+              stateMachines: ['Login Machine'],
+              //Al iniciar la animacion
+              onInit: (artboard) {
+                _controller = StateMachineController.fromArtboard(artboard, 'Login Machine');
+                //Verifica que inicio bien
+                if(_controller == null) return;
+                //Agrega el controlador al tablero/escenario
+                artboard.addController(_controller!);
+                //Vincular variables
+                _isChecking = _controller!.findSMI('isChecking');
+                _isHandsUp = _controller!.findSMI('isHandsUp');
+                _trigSuccess = _controller!.findSMI('trigSuccess');
+                _trigFail = _controller!.findSMI('trigFail');
+
+              }
+              
+              )
+              ),
               //Para separacion
               const SizedBox(height: 10),
               TextField(
+                onChanged: (value) {
+                  if (_isHandsUp != null) {
+                    //No tapes los ojos al ver email
+                    _isHandsUp!.change(false);
+                  }
+                  if (_isChecking == null) return;
+                  //Activa  el modo chisme
+                  _isChecking!.change(true);
+                },
                 //Para mostrar un tipo de tecleado
                 keyboardType: TextInputType.emailAddress,
                 decoration: InputDecoration(
@@ -43,17 +79,28 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 10),
               TextField(
+                onChanged: (value) {
+                  if (_isHandsUp != null) {
+                    //No modo chisme
+                    _isChecking!.change(false);
+                  }
+                  if (_isHandsUp == null) return;
+                  //Arriba las manos
+                  _isHandsUp!.change(true);
+                },
+
                 obscureText: _obscureText,
                 decoration: InputDecoration(
                   hintText: 'Password',
-                  prefixIcon: Icon(Icons.lock),//cerrado o seguro
+                  prefixIcon: const Icon(Icons.lock),//Cerrado o Seguro
                   suffixIcon: IconButton(
+                    //if terniario
                     icon: Icon(
-                      _obscureText ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () { //icono para mostrar u ocultar la contraseña
-                      setState(() {//Para actualizar la interfaz de usuario
-                        //Cambiar el estado de la visibilidad de la contraseña
+                      _obscureText ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () {
+                      //Refresca el widget para mostrar u ocultar la contraseña
+                      setState(() {
+                        //Cambiar el estado de _obscureText para mostrar u ocultar la contraseña
                         _obscureText = !_obscureText;
                       });
                     },
