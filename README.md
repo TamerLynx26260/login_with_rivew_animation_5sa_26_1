@@ -93,8 +93,6 @@ lib/
     └── animated_login_bear.riv
 🎬 Demo
 
-Place your GIF file in the root of your repository and use:
-
 ![App Demo](demo.gif)
 
 Example:
