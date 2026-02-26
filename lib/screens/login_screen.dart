@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:rive/rive.dart';
+import 'dart:async'; //3.1 Para usar Timer y simular un proceso de inicio de sesión
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,28 +20,36 @@ class _LoginScreenState extends State<LoginScreen> {
   SMIBool? _isHandsUp;
   SMITrigger? _trigSuccess;
   SMITrigger? _trigFail;
+  
+  //2.1 variable para el recorrido de la mirada
+  SMINumber? _numLook;
 
- //1))Crear Variables para Focusmode
-  final _emailFocusNode = FocusNode();
-  final _passwordFocusNode = FocusNode();
+//1.1)crear variables para focusnode
+  final FocusNode _emailFocusNode = FocusNode();
+  final FocusNode _passwordFocusNode = FocusNode();
 
-  //2)) Listeners ()
+  //timer para detener mirada al dejar de escribir
+  Timer? _typingDebounce;
+
+//1.2)Listeners para detectar cuando el usuario enfoca o desenfoca los campos de texto
   @override
   void initState() {
     super.initState();
     _emailFocusNode.addListener(() {
       if (_emailFocusNode.hasFocus) {
-        //No tapes los ojos al ver email
         if (_isHandsUp != null) {
-          _isHandsUp!.change(false);
+        //No tapes los ojos al ver email
+        _isHandsUp?.change(false);
+        //2.2 Mirada neutral
+        _numLook?.value = 50.0;
         }
       }
     });
-_passwordFocusNode.addListener(() {
-  // manos arriba en password
-  _isHandsUp?.change(_passwordFocusNode.hasFocus);
-});
-}
+    _passwordFocusNode.addListener(() {
+      //manos arriba al enfocar el campo de contraseña
+        _isHandsUp?.change(_passwordFocusNode.hasFocus);
+        });
+      }
 
   @override
   Widget build(BuildContext context) {
@@ -71,23 +80,45 @@ _passwordFocusNode.addListener(() {
                 _trigSuccess = _controller!.findSMI('trigSuccess');
                 _trigFail = _controller!.findSMI('trigFail');
 
+                //2.3 vincular numlook
+                _numLook = _controller!.findSMI('numLook');
+
               }
               
               )
               ),
               //Para separacion
               const SizedBox(height: 10),
+              //Campo de texto para el email
               TextField(
-                //3)asignar FocusNode al TextField
+                //1.3)Asignar los focusnode a los campos de texto
                 focusNode: _emailFocusNode,
                 onChanged: (value) {
                   if (_isHandsUp != null) {
                     //No tapes los ojos al ver email
-                    //_isHandsUp!.change(false);
+                  // _isHandsUp!.change(false);
                   }
                   if (_isChecking == null) return;
                   //Activa  el modo chisme
                   _isChecking!.change(true);
+                  //implementar numLook
+                  //Ajustes de limites de 0 a 100
+                  //80 como medida de calibracion
+                  final look = (value.length/80.0*100)
+                  .clamp(0.0, 100.0); //clamp es el rango (abrazadera)
+                  _numLook?.value = look;
+
+                  //3.3 Debounce: sivuelve a teclear reinicia el contador
+                  //cancelar cualquier timer existente
+                  _typingDebounce?.cancel();
+                  //crear un nuevo timer
+                  _typingDebounce = Timer(const Duration(seconds: 2), () {
+                    //si se cierra la pantalla, quita el contador
+                    if (!mounted) return;
+                  //mirada neutra
+                  _isChecking?.change(false);
+                  });
+
                 },
                 //Para mostrar un tipo de tecleado
                 keyboardType: TextInputType.emailAddress,
@@ -102,16 +133,16 @@ _passwordFocusNode.addListener(() {
               ),
               const SizedBox(height: 10),
               TextField(
-                //3)asignar FocusNode al TextField
+                //1.3)Asignar los focusnode a los campos de texto
                 focusNode: _passwordFocusNode,
                 onChanged: (value) {
                   if (_isHandsUp != null) {
                     //No modo chisme
-                    _isChecking!.change(false);
+                    //_isChecking!.change(false);
                   }
                   if (_isHandsUp == null) return;
                   //Arriba las manos
-                  //_isHandsUp!.change(true);
+                  _isHandsUp!.change(true);
                 },
 
                 obscureText: _obscureText,
@@ -141,12 +172,12 @@ _passwordFocusNode.addListener(() {
       ),
     );
   }
-  //1.4 liberarr memoria/recursos al salir de la pantalla
+  //Liberar recursos de los focusnode
   @override
   void dispose() {
-    //4) Liberar los FocusNode para evitar fugas de memoria
     _emailFocusNode.dispose();
     _passwordFocusNode.dispose();
     super.dispose();
+    _typingDebounce?.cancel(); //Cancelar el timer si existe
   }
 }
